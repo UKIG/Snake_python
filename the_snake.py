@@ -33,7 +33,7 @@ SPEED = 15
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
 # Заголовок окна игрового поля:
-pygame.display.set_caption('Змейка')
+pygame.display.set_caption("Змейка")
 
 # Настройка времени:
 clock = pygame.time.Clock()
@@ -74,8 +74,10 @@ class Apple(GameObject):
         число из диапазона 20-SCREEN_WIDTH с шагом 20,
         чтобы координаты змейки и яблока всегда могли совпасть.
         """
-        self.position = ((randrange(20, SCREEN_WIDTH, 20)),
-                         (randrange(20, SCREEN_HEIGHT, 20)))
+        self.position = (
+            (randrange(20, SCREEN_WIDTH, 20)),
+            (randrange(20, SCREEN_HEIGHT, 20)),
+        )
 
     def draw(self) -> None:
         """Отрисовка яблока по заданным параметрам"""
@@ -148,7 +150,7 @@ class Snake(GameObject):
     def draw(self) -> None:
         """Отрисовка змейки (Из прекода)"""
         for position in self.positions[:-1]:
-            rect = (pygame.Rect(position, (GRID_SIZE, GRID_SIZE)))
+            rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, self.body_color, rect)
             pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
@@ -243,7 +245,7 @@ def main():
     #     # ...
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
 
 # Метод draw класса Apple
