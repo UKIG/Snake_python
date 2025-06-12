@@ -232,7 +232,6 @@ def main():
         snake.move()
         snake.draw()
         apple.draw()
-        print(snake.positions)
         if snake.get_head_position() == apple.position:
             snake.positions.append(apple.position)
             snake.length += 1
