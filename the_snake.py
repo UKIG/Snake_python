@@ -49,13 +49,17 @@ class GameObject:
         self.position = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
         self.body_color = None
 
-    def draw(self):
-        """Заглушка для переопределения в дочках"""
-        pass
+        # вынес метод draw в родительский класс, чтобы избежать повторения кода
+
+    def draw(self, position: tuple) -> None:
+        """Метод draw отрисовывает объект по переданным координатам"""
+        rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
+        pygame.draw.rect(screen, self.body_color, rect)
+        pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
 class Apple(GameObject):
-    """Класс яблоко, содржащий в себе конструктор и два метода.
+    """Класс яблоко, содержит в себе конструктор и два метода.
     Метод randomize_position случайным
     образом задаёт положение яблока на экране.
     Метод draw рисует яблоко на экране.
@@ -72,15 +76,10 @@ class Apple(GameObject):
         чтобы координаты змейки и яблока всегда могли совпасть.
         """
         self.position = (
-            (randrange(20, SCREEN_WIDTH, 20)),
-            (randrange(20, SCREEN_HEIGHT, 20)),
+            # заменил числа на константы
+            (randrange(GRID_SIZE, SCREEN_WIDTH, GRID_SIZE)),
+            (randrange(GRID_SIZE, SCREEN_HEIGHT, GRID_SIZE)),
         )
-
-    def draw(self) -> None:
-        """Отрисовка яблока по заданным параметрам"""
-        rect = pygame.Rect(self.position, (GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, self.body_color, rect)
-        pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
 class Snake(GameObject):
@@ -101,22 +100,24 @@ class Snake(GameObject):
             self.direction = self.next_direction
             self.next_direction = None
 
+    def get_param(self, direct):
+        """Метод для упаковки параметров"""
+        return (
+            self.positions[0][0] + direct[0] * GRID_SIZE,
+            self.positions[0][1] + direct[1] * GRID_SIZE,
+        )
+
     def sub_move(self, direct) -> None:
         """Метод sub_move уменьшает дублирование кода в методе move (DRY).
         Добавляет новую голову в направлении
         движения и удаляет хвост, реализуя перемещение.
         Если змейка сталкивается с собой - вызывает сброс (reset).
         """
-        x_cord = self.positions[0][0] + direct[0] * GRID_SIZE
-        y_cord = self.positions[0][1] + direct[1] * GRID_SIZE
-        if x_cord >= SCREEN_WIDTH:
-            x_cord = 20
-        elif x_cord < 1:
-            x_cord = SCREEN_WIDTH - 20
-        if y_cord >= SCREEN_HEIGHT:
-            y_cord = 20
-        elif y_cord < 1:
-            y_cord = SCREEN_HEIGHT - 20
+        # Сделал распаковку значений.
+        x_cord, y_cord = self.get_param(direct)
+        # Убрал условный оператор, выполнив расчёт через %.
+        x_cord %= SCREEN_WIDTH
+        y_cord %= SCREEN_HEIGHT
         cords = (x_cord, y_cord)
         if self.length != 1 and cords in self.positions:
             self.reset()
@@ -144,18 +145,13 @@ class Snake(GameObject):
             self.sub_move(DOWN)
 
     # Метод draw класса Snake
-    def draw(self) -> None:
+    def draw_snake(self) -> None:
         """Отрисовка змейки (Из прекода)"""
         for position in self.positions[:-1]:
-            rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
-            pygame.draw.rect(screen, self.body_color, rect)
-            pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
+            self.draw(position)
 
         # Отрисовка головы змейки
-        head_rect = pygame.Rect(self.positions[0], (GRID_SIZE, GRID_SIZE))
-        pygame.draw.rect(screen, self.body_color, head_rect)
-        pygame.draw.rect(screen, BORDER_COLOR, head_rect, 1)
-
+        self.draw(self.get_head_position())
         # Затирание последнего сегмента
         if self.last:
             last_rect = pygame.Rect(self.last, (GRID_SIZE, GRID_SIZE))
@@ -201,6 +197,27 @@ def handle_keys(game_object) -> None:
                 game_object.next_direction = RIGHT
 
 
+# Решил вынести код для обработки поедания яблока в отдельную функцию,
+# чтобы не захламлять main, также добавил обработку условия когда
+# яблоко могло появляться в змее.
+def eat_and_check_position(snake, apple):
+    """Проверяет и обрабатывает столкновение змейки с яблоком.
+
+    Если координаты головы змейки совпадают с положением яблока:
+    1. Увеличивает змейку
+    2. Генерирует новое положение яблока
+
+    Убеждается, что новое яблоко не появляется внутри тела змейки.
+    """
+    if snake.get_head_position() == apple.position:
+        snake.positions.append(apple.position)
+        snake.length += 1
+        apple.randomize_position()
+    if apple.position in snake.positions:
+        while apple.position in snake.positions:
+            apple.randomize_position()
+
+
 def main():
     """Главный игровой цикл программы 'Змейка'.
     Инициализирует игру, создает объекты змейки
@@ -227,13 +244,9 @@ def main():
         clock.tick(SPEED)
         handle_keys(snake)
         snake.move()
-        snake.draw()
-        apple.draw()
-        if snake.get_head_position() == apple.position:
-            snake.positions.append(apple.position)
-            snake.length += 1
-            apple.randomize_position()
-
+        snake.draw_snake()
+        apple.draw(apple.position)
+        eat_and_check_position(snake, apple)
         pygame.display.update()
 
 
