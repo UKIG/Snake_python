@@ -1,5 +1,4 @@
 from random import choice, randrange
-
 import pygame
 
 # Константы для размеров поля и сетки:
@@ -23,7 +22,7 @@ BORDER_COLOR = (93, 216, 228)
 
 # Цвет яблока
 APPLE_COLOR = (255, 0, 0)
-#Цвет камня
+# Цвет камня
 ROCKET_COLOR = (0, 0, 255)
 # Цвет змейки
 SNAKE_COLOR = (0, 255, 0)
@@ -35,57 +34,70 @@ Speed = 15
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), 0, 32)
 
 # Заголовок окна игрового поля:
-pygame.display.set_caption('Змейка')
+pygame.display.set_caption("Змейка")
 
 # Настройка времени:
 clock = pygame.time.Clock()
 
 count_eaten_apples = 0
 
+
 class GameObject:
-    """Родительский класс, от которого наследуются классы Apple и Snake.
-    Содержит конструктор с общими атрибутами и метод заглушку,
-    который переопределяется в дочерних классах.
+    """Базовый класс для всех игровых объектов.
+
+    Attributes:
+        position (tuple): Текущая позиция объекта на экране (x, y).
+        body_color (tuple): Цвет объекта в формате RGB.
     """
 
     def __init__(self) -> None:
+        """Инициализирует игровой объект с позицией по центру экрана."""
         self.position = ((SCREEN_WIDTH // 2), (SCREEN_HEIGHT // 2))
         self.body_color = None
 
-        # вынес метод draw в родительский класс, чтобы избежать повторения кода
-
     def draw(self, position: tuple) -> None:
-        """Метод draw отрисовывает объект по переданным координатам"""
+        """Отрисовывает объект на указанной позиции.
+
+        Args:
+            position (tuple): Координаты (x, y) для отрисовки объекта.
+        """
         rect = pygame.Rect(position, (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(screen, self.body_color, rect)
         pygame.draw.rect(screen, BORDER_COLOR, rect, 1)
 
 
 class Apple(GameObject):
-    """Класс яблоко, содержит в себе конструктор и два метода.
-    Метод randomize_position случайным
-    образом задаёт положение яблока на экране.
-    Метод draw рисует яблоко на экране.
+    """Класс, представляющий яблоко в игре.
+
+    Attributes:
+        body_color (tuple): Цвет яблока (красный).
     """
 
     def __init__(self) -> None:
+        """Инициализирует яблоко со случайной позицией."""
         super().__init__()
         self.body_color = APPLE_COLOR
         self.randomize_position()
 
     def randomize_position(self) -> None:
-        """С помощью randrange выбирает случайное
-        число из диапазона 20-SCREEN_WIDTH с шагом 20,
-        чтобы координаты змейки и яблока всегда могли совпасть.
-        """
+        """Генерирует случайную позицию для яблока на игровом поле."""
         self.position = (
-            # заменил числа на константы
-            (randrange(GRID_SIZE, SCREEN_WIDTH, GRID_SIZE)),
-            (randrange(GRID_SIZE, SCREEN_HEIGHT, GRID_SIZE)),
+            randrange(GRID_SIZE, SCREEN_WIDTH, GRID_SIZE),
+            randrange(GRID_SIZE, SCREEN_HEIGHT, GRID_SIZE),
         )
 
+
 class Rock(GameObject):
+    """Класс, представляющий препятствия (камни) в игре.
+
+    Attributes:
+        body_color (tuple): Цвет камня (синий).
+        rocks (list): Список позиций всех камней на поле.
+        last (tuple): Последняя позиция камня.
+    """
+
     def __init__(self) -> None:
+        """Инициализирует камень со случайной позицией."""
         super().__init__()
         self.body_color = ROCKET_COLOR
         self.rocks = list()
@@ -93,31 +105,38 @@ class Rock(GameObject):
         self.randomize_position()
 
     def spawn_rock(self) -> None:
-
+        """Добавляет новый камень в список и отрисовывает его."""
         self.rocks.append(self.position)
         self.draw(self.position)
 
-    def remove(self):
+    def remove(self) -> None:
+        """Удаляет все камни с игрового поля."""
         for rock in self.rocks:
             last_rect = pygame.Rect(rock, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
 
     def randomize_position(self) -> None:
-        """С помощью randrange выбирает случайное
-        число из диапазона 20-SCREEN_WIDTH с шагом 20,
-        чтобы координаты змейки и яблока всегда могли совпасть.
-        """
+        """Генерирует случайную позицию для камня на игровом поле."""
         self.position = (
-            # заменил числа на константы
-            (randrange(GRID_SIZE, SCREEN_WIDTH, GRID_SIZE)),
-            (randrange(GRID_SIZE, SCREEN_HEIGHT, GRID_SIZE)),
+            randrange(GRID_SIZE, SCREEN_WIDTH, GRID_SIZE),
+            randrange(GRID_SIZE, SCREEN_HEIGHT, GRID_SIZE),
         )
 
 
 class Snake(GameObject):
-    """Объект класса Snake"""
+    """Класс, представляющий змейку в игре.
+
+    Attributes:
+        body_color (tuple): Цвет змейки (зеленый).
+        length (int): Текущая длина змейки.
+        positions (list): Список позиций всех сегментов змейки.
+        direction (tuple): Текущее направление движения.
+        next_direction (tuple): Следующее направление движения.
+        last (tuple): Позиция последнего сегмента змейки.
+    """
 
     def __init__(self) -> None:
+        """Инициализирует змейку в центре экрана."""
         super().__init__()
         self.body_color = SNAKE_COLOR
         self.length = 1
@@ -126,28 +145,34 @@ class Snake(GameObject):
         self.next_direction = None
         self.last = None
 
-    def update_direction(self):
-        """Метод обновления координат в зависимости от направления движения."""
+    def update_direction(self) -> None:
+        """Обновляет текущее направление движения змейки."""
         if self.next_direction:
             self.direction = self.next_direction
             self.next_direction = None
 
-    def get_param(self, direct):
-        """Метод для упаковки параметров"""
+    def get_param(self, direct: tuple) -> tuple:
+        """Вычисляет новые координаты на основе направления.
+
+        Args:
+            direct (tuple): Направление движения (x, y).
+
+        Returns:
+            tuple: Новые координаты головы змейки.
+        """
         return (
             self.positions[0][0] + direct[0] * GRID_SIZE,
             self.positions[0][1] + direct[1] * GRID_SIZE,
         )
 
-    def sub_move(self, direct, rock = None) -> None:
-        """Метод sub_move уменьшает дублирование кода в методе move (DRY).
-        Добавляет новую голову в направлении
-        движения и удаляет хвост, реализуя перемещение.
-        Если змейка сталкивается с собой - вызывает сброс (reset).
+    def sub_move(self, direct: tuple, rock=None) -> None:
+        """Обрабатывает движение змейки в указанном направлении.
+
+        Args:
+            direct (tuple): Направление движения.
+            rock (Rock, optional): Объект камня для обработки столкновений.
         """
-        # Сделал распаковку значений.
         x_cord, y_cord = self.get_param(direct)
-        # Убрал условный оператор, выполнив расчёт через %.
         x_cord %= SCREEN_WIDTH
         y_cord %= SCREEN_HEIGHT
         cords = (x_cord, y_cord)
@@ -158,48 +183,44 @@ class Snake(GameObject):
             self.last = self.positions[-1]
             del self.positions[-1]
 
-    def move(self, rock = None) -> None:
-        """Метод move проверяет направление движения, в зависимости от этого,
-        передаёт нужное направление в метод sub_move,
-        в котором написана основная логика движения змейки.
+    def move(self, rock=None) -> None:
+        """Обновляет позицию змейки в зависимости от текущего направления.
+
+        Args:
+            rock (Rock, optional): Объект камня для обработки столкновений.
         """
         self.update_direction()
         if self.direction == LEFT:
             self.sub_move(LEFT, rock)
-
         elif self.direction == RIGHT:
             self.sub_move(RIGHT, rock)
-
         elif self.direction == UP:
             self.sub_move(UP, rock)
-
         elif self.direction == DOWN:
             self.sub_move(DOWN, rock)
 
-    # Метод draw класса Snake
     def draw_snake(self) -> None:
-        """Отрисовка змейки (Из прекода)"""
+        """Отрисовывает змейку на игровом поле."""
         for position in self.positions[:-1]:
             self.draw(position)
-
-        # Отрисовка головы змейки
         self.draw(self.get_head_position())
-        # Затирание последнего сегмента
         if self.last:
             last_rect = pygame.Rect(self.last, (GRID_SIZE, GRID_SIZE))
             pygame.draw.rect(screen, BOARD_BACKGROUND_COLOR, last_rect)
 
     def get_head_position(self) -> tuple:
-        """Метод get_head_position возвращает
-        координаты головы змеи в виде кортежа.
+        """Возвращает позицию головы змейки.
+
+        Returns:
+            tuple: Координаты (x, y) головы змейки.
         """
         return self.positions[0]
 
-    def reset(self, rock = None) -> None:
-        """Метод reset возвращает змейку к начальному положению.
-        В цикле закрашиваем тело змейки в цвет фона, После чего обнуляем массив
-        координат змейки и задаём начальное значение.
-        Рандомно выбираем направление движения
+    def reset(self, rock=None) -> None:
+        """Сбрасывает змейку в начальное состояние.
+
+        Args:
+            rock (Rock, optional): Объект камня для очистки при сбросе.
         """
         for i in range(len(self.positions)):
             self.last = self.positions[i]
@@ -214,8 +235,14 @@ class Snake(GameObject):
         count_eaten_apples = 0
         if rock:
             rock.remove()
+
+
 def handle_keys(game_object) -> None:
-    """Обработка нажатий пользователя (Из прекода)"""
+    """Обрабатывает нажатия клавиш для управления змейкой.
+
+    Args:
+        game_object (Snake): Объект змейки, которым управляет игрок.
+    """
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -238,28 +265,44 @@ def handle_keys(game_object) -> None:
                     Speed -= 5
 
 
+def rock_conflict(snake: Snake, rock: Rock) -> None:
+    """Обрабатывает столкновение змейки с камнями.
 
-
-def rock_conflict(snake, rock) -> None:
+    Args:
+        snake (Snake): Объект змейки.
+        rock (Rock): Объект камней.
+    """
     if snake.get_head_position() in rock.rocks:
         rock.remove()
         rock.rocks.clear()
         snake.reset()
-def chek_positions_between_rock_and_over(snake, apple, rock) -> None:
-    if rock.position in snake.positions or rock.position in apple.position:
-        while rock.position in snake.positions or rock.position in apple.position:
+
+
+def chek_positions_between_rock_and_over(
+    snake: Snake, apple: Apple, rock: Rock
+) -> None:
+    """Проверяет и корректирует позиции камня,
+    чтобы он не появлялся на змейке или яблоке.
+
+    Args:
+        snake (Snake): Объект змейки.
+        apple (Apple): Объект яблока.
+        rock (Rock): Объект камней.
+    """
+    if rock.position in snake.positions or rock.position == apple.position:
+        while rock.position in snake.positions or rock.position == apple.position:
             rock.randomize_position()
 
-def eat_and_check_position_and_spawn_rock(snake, apple, rock):
-    """Проверяет и обрабатывает столкновение змейки с яблоком,
-     а также генерирует камни на игровом поле.
 
-    Если координаты головы змейки совпадают с положением яблока:
-    1. Увеличивает змейку
-    2. Генерирует новое положение яблока
-    3. Генерирует 1 камень
+def eat_and_check_position_and_spawn_rock(
+    snake: Snake, apple: Apple, rock: Rock
+) -> None:
+    """Обрабатывает поедание яблока и генерацию камней.
 
-    Убеждается, что новое яблоко не появляется внутри тела змейки.
+    Args:
+        snake (Snake): Объект змейки.
+        apple (Apple): Объект яблока.
+        rock (Rock): Объект камней.
     """
     if snake.get_head_position() == apple.position:
         snake.positions.append(apple.position)
@@ -276,30 +319,13 @@ def eat_and_check_position_and_spawn_rock(snake, apple, rock):
             apple.randomize_position()
 
 
-def main():
-    """Главный игровой цикл программы 'Змейка'.
-    Инициализирует игру, создает объекты змейки
-
-    и яблока, обрабатывает следующие события:
-    - Управление змейкой с клавиатуры
-    - Движение змейки
-    - Отрисовка игровых объектов
-    - Проверка столкновений
-    - Обновление игрового поля
-
-    Игра:
-        - Змейка растет при поедании яблок
-        - Игра продолжается бесконечно (без системы очков)
-        - При столкновении с собой
-        змейка сбрасывается (реализовано в классе Snake)
-    """
-    # Инициализация PyGame:
+def main() -> None:
+    """Главная функция, запускающая и управляющая игровым циклом."""
     pygame.init()
-
-    # Тут нужно создать экземпляры классов.
     apple = Apple()
     snake = Snake()
     rock = Rock()
+
     while True:
         clock.tick(Speed)
         handle_keys(snake)
@@ -311,5 +337,5 @@ def main():
         pygame.display.update()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
